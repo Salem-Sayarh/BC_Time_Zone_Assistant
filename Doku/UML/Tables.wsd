@@ -1,0 +1,40 @@
+@startuml   Tables
+entity "Time Zone" as TZ {
+  * Code (PK)
+  --
+  Description
+  UTC_Offset
+  DST_Offset (Optional)
+  DST_Start_Date (Optional)
+  DST_End_Date (Optional)
+}
+
+entity Customer {
+  * No. (PK)
+  --
+  + Name
+  Address
+  ...
+  ## Time_Zone_Code (FK)
+}
+
+entity "Service Order Header" as SOH {
+  * No. (PK)
+  --
+  Customer_No (FK)
+  + Scheduled_Start_UTC
+  + Scheduled_End_UTC
+  ## Time_Zone_Code (FK)
+  Reminder_Time (Existing)
+  ...
+}
+
+TZ }|--|| Customer : "1 Time Zone\nhas many Customers"
+TZ }|--o{ SOH : "1 Time Zone\nhas many Service Orders"
+Customer ||--o{ SOH : "1 Customer\nhas many Orders"
+
+note right of SOH::Scheduled_Start_UTC
+  Replaces original Scheduled_Start
+  Hidden from UI - only local time shown
+end note
+@enduml 

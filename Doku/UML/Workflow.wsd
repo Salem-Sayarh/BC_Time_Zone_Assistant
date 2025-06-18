@@ -1,0 +1,51 @@
+@startuml   Workflow
+!theme plain
+skinparam component {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor #Green
+}
+
+package "Time Zone Aware Scheduling" {
+  [Service Order Page] as UI
+  [Time Zone Management] as TZM
+  [Reminder Job] as RJ
+  [Database] as DB
+
+  database "Time Zone Table" as TZT
+  database "Customer Table" as Cust
+  database "Service Order Table" as SO
+}
+
+[External User] as User
+
+User --> UI : Interacts with\nService Orders
+UI --> TZM : Conversion Requests\n(Local ↔ UTC)
+TZM --> UI : Converted DateTimes
+UI --> DB : Save/Load Orders
+RJ --> TZM : Batch Conversion\n(UTC → Local)
+RJ --> DB : Read/Update Orders
+DB --> TZM : Time Zone Data
+
+DB *-- TZT : Reads
+DB *-- Cust : Reads/Writes
+DB *-- SO : Reads/Writes
+
+Cust *-- TZT : References\n(Time Zone Code)
+SO *-- TZT : References\n(Time Zone Code)
+SO *-- Cust : References\n(Customer No.)
+
+note top of TZM
+  Core Conversion Logic:
+  - ConvertToUTC()
+  - ConvertFromUTC()
+  - GetOffset()
+end note
+
+note right of RJ
+  Scheduled Task:
+  - Scans upcoming orders
+  - Adjusts reminders
+  - Runs nightly
+end note
+@enduml
