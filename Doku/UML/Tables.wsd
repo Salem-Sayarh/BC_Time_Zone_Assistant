@@ -1,40 +1,62 @@
-@startuml   Tables
-entity "Time Zone" as TZ {
-  * Code (PK)
-  --
-  Description
-  UTC_Offset
-  DST_Offset (Optional)
-  DST_Start_Date (Optional)
-  DST_End_Date (Optional)
-}
-
-entity Customer {
+@startuml Tables
+' Tables
+entity Customer << (T,#FFAAAA) >> {
   * No. (PK)
   --
-  + Name
+  * Name
   Address
+  City
   ...
-  ## Time_Zone_Code (FK)
+  + **Time_Zone_Identifier : Text[50]**
 }
 
-entity "Service Order Header" as SOH {
+entity "Service Order" << (T,#FFAAAA) >> {
   * No. (PK)
   --
-  Customer_No (FK)
-  + Scheduled_Start_UTC
-  + Scheduled_End_UTC
-  ## Time_Zone_Code (FK)
-  Reminder_Time (Existing)
+  Customer_No : Code[20]
+  Scheduled_Start : DateTime
+  Scheduled_End : DateTime
+  Status
   ...
+  ++ **Display Fields (not stored)** ++
+  __
+  Customer_Local_Time : DateTime
+  Time_Zone_Status : Text[20]
 }
 
-TZ }|--|| Customer : "1 Time Zone\nhas many Customers"
-TZ }|--o{ SOH : "1 Time Zone\nhas many Service Orders"
-Customer ||--o{ SOH : "1 Customer\nhas many Orders"
+entity "Time Zone Cache" << (T,#FFAAAA) >> {
+  ** (temporary in-memory) **
+  --
+  Zone_Identifier : Text[50]
+  UTC_Offset : Decimal
+  Expiration_Time : DateTime
+}
 
-note right of SOH::Scheduled_Start_UTC
-  Replaces original Scheduled_Start
-  Hidden from UI - only local time shown
+' Relationships
+Customer ||--o{ "Service Order" : "Has"
+"Service Order" .> "Time Zone Cache" : "Uses\n(not stored)"
+
+' Notes
+note top of Customer
+  Modified Standard Table
+  New Field: Time_Zone_Identifier
+  Stores IANA format ("Europe/Berlin")
+  or simple ID ("CET")
 end note
-@enduml 
+
+note right of "Service Order"
+  No schema changes
+  New display fields on page:
+  - Customer_Local_Time (calculated)
+  - Time_Zone_Status
+end note
+
+note bottom of "Time Zone Cache"
+  Temporary in-memory storage
+  Not persisted to database
+  Key fields:
+  - Zone_Identifier
+  - UTC_Offset
+  - Expiration_Time (1 hour)
+end note
+@enduml
